@@ -1,5 +1,3 @@
-import React from 'react';
-
 import './button.css';
 
 export interface ButtonProps {
@@ -35,3 +33,4 @@ export const Button = ({
     </button>
   );
 };
+
