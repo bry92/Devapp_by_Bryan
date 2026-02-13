@@ -20,6 +20,7 @@ type Blueprint = {
 };
 
 export default function App() {
+  const apiBaseUrl = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") || "http://localhost:5000";
 
   const [prompt, setPrompt] = useState("");
   const [blueprint, setBlueprint] = useState(`{
@@ -37,29 +38,43 @@ export default function App() {
 }`);
   const [status, setStatus] = useState("Ready");
 
-  function generateBlueprint() {
+  async function generateBlueprint() {
     setStatus("Generating...");
-    // placeholder until you connect OpenRouter
-    setTimeout(() => {
-      setBlueprint(`{
-  "name": "Sleep Tracker",
-  "stack": "react-vite",
-  "theme": "dark",
-  "structure": {
-    "components": ["Header", "PrimaryButton"],
-    "pages": ["Home"],
-    "lib": ["api.js"]
-  },
-  "screens": [
-    { "id": "home", "title": "Dashboard", "components": ["header", "list", "button"] }
-  ],
-  "data": [
-    { "model": "Item", "fields": ["id", "title", "createdAt"] }
-  ],
-  "actions": ["createItem", "deleteItem"]
-}`);
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "meta-llama/llama-3.2-3b-instruct:free",
+          messages: [
+            {
+              role: "system",
+              content:
+                "Return only valid JSON for an app blueprint with keys name, stack, theme, structure, screens, data, actions.",
+            },
+            {
+              role: "user",
+              content: prompt || "Create a simple app blueprint for a todo app.",
+            },
+          ],
+        }),
+      });
+
+      const payload = (await response.json()) as unknown;
+      if (!response.ok) {
+        throw new Error(typeof payload === "object" && payload !== null && "error" in payload ? String((payload as { error: unknown }).error) : "API request failed");
+      }
+
+      const content = extractAssistantText(payload);
+      const parsedJson = extractJsonObject(content);
+      JSON.parse(parsedJson);
+      setBlueprint(parsedJson);
       setStatus("Generated");
-    }, 700);
+    } catch (error) {
+      setStatus(`Error: ${error instanceof Error ? error.message : "Failed to generate"}`);
+    }
   }
 
   let parsed: Blueprint | null;
@@ -291,6 +306,35 @@ export default function App() {
       </div>
     </div>
   );
+}
+
+function extractAssistantText(payload: unknown): string {
+  if (
+    typeof payload === "object" &&
+    payload !== null &&
+    "choices" in payload &&
+    Array.isArray((payload as { choices?: unknown }).choices)
+  ) {
+    const first = (payload as { choices: Array<{ message?: { content?: unknown } }> }).choices[0];
+    const content = first?.message?.content;
+    if (typeof content === "string") return content;
+    if (Array.isArray(content)) {
+      return content.map((part) => (typeof part === "string" ? part : "")).join("");
+    }
+  }
+  throw new Error("Invalid API response format");
+}
+
+function extractJsonObject(raw: string): string {
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = fenced?.[1] ?? raw;
+  const trimmed = candidate.trim();
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error("No JSON object returned");
+  }
+  return trimmed.slice(start, end + 1);
 }
 
 
