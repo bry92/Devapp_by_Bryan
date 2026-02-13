@@ -4,7 +4,7 @@ import { saveAs } from "file-saver";
 import { generateProjectFiles } from "../engine/projectGenerator.mjs";
 import { SAMPLE_BLUEPRINT } from "./sampleBlueprint.js";
 
-export default function PublishPage() {
+export default function PublishPage({ onBuildApp, buildStatus }) {
   const [backendUrl, setBackendUrl] = useState("https://devapp-by-bryan-1.onrender.com");
   const [frontendUrl, setFrontendUrl] = useState("https://devapp-by-bryan.onrender.com");
   const [status, setStatus] = useState("Idle");
@@ -43,12 +43,26 @@ export default function PublishPage() {
         </label>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button onClick={() => setStatus("Build passed") } style={buttonStyle}>Run build</button>
+          <button
+            onClick={async () => {
+              setStatus("Build started");
+              if (onBuildApp) {
+                await onBuildApp();
+              }
+              setStatus("Build passed");
+            }}
+            style={buttonStyle}
+          >
+            Build App
+          </button>
           <button onClick={exportZip} style={buttonStyle}>Export ZIP</button>
           <button onClick={() => setStatus("Domain connection flow opened") } style={buttonStyle}>Connect Domain</button>
         </div>
 
         <div style={{ color: "rgba(255,255,255,0.78)", fontSize: 13 }}>Status: {status}</div>
+        <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 12 }}>
+          Global Build Status: {buildStatus || "Not started"}
+        </div>
       </div>
     </div>
   );
