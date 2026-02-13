@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import Sidebar from "./Sidebar.jsx";
+import AICoderChatbot from "./AICoderChatbot.jsx";
 import devappHero from "../assets/devapp-hero.png";
 import {
   TAB_GROUPS,
@@ -42,7 +43,25 @@ export default function DashboardLayout() {
           justifyContent: "space-between",
         }}
       >
-        <strong style={{ letterSpacing: 0.3 }}>Devapp by Bryan</strong>
+        <button
+          onClick={() => {
+            setActiveTab("Preview");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          style={{
+            letterSpacing: 0.3,
+            fontWeight: 700,
+            fontSize: 16,
+            color: "#fff",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+          }}
+          title="Go to main page"
+        >
+          Devapp by Bryan
+        </button>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ color: "rgba(255,255,255,0.68)", fontSize: 13 }}>
             {activeTab} | {buildStatus}
@@ -107,6 +126,7 @@ export default function DashboardLayout() {
           )}
         </section>
       </main>
+      <AICoderChatbot />
     </div>
   );
 }
