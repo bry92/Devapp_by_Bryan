@@ -1,0 +1,27 @@
+services:
+  - type: static
+    name: devapp-by-bryan
+    repo: https://github.com/bry92/Devapp_by_Bryan
+    rootDir: vibe-code-forge-main
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://devapp-by-bryan-1.onrender.com
+
+  - type: web
+    name: devapp-by-bryan-1
+    repo: https://github.com/bry92/Devapp_by_Bryan
+    rootDir: vibe-code-forge-main/server
+    env: node
+    buildCommand: npm ci
+    startCommand: npm run start
+    envVars:
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: CLIENT_ORIGIN
+        value: https://devapp-by-bryan.onrender.com
+      - key: PORT
+        value: "10000"
+      - key: NODE_ENV
+        value: production
