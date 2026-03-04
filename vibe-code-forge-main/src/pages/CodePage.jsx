@@ -1,25 +1,37 @@
 import { useMemo, useState } from "react";
 import { generateProjectFiles } from "../engine/projectGenerator.mjs";
-import { SAMPLE_BLUEPRINT } from "./sampleBlueprint.js";
+import { createBlueprintFromPrompt } from "../engine/aiBuilder.js";
+import { readStoredProject } from "../engine/projectPersistence.js";
+
+const LOCAL_STORAGE_KEY = "vibe-code-forge-project";
 
 export default function CodePage() {
   const [selectedFile, setSelectedFile] = useState("");
+  const [version, setVersion] = useState(0);
 
   const files = useMemo(() => {
-    try {
-      return generateProjectFiles(JSON.parse(SAMPLE_BLUEPRINT));
-    } catch {
-      return {};
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (saved) {
+      const parsed = readStoredProject(saved);
+      if (parsed?.files) return parsed.files;
+      if (parsed?.blueprint) return generateProjectFiles(parsed.blueprint);
+      if (!parsed) {
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+      }
     }
-  }, []);
+
+    return generateProjectFiles(createBlueprintFromPrompt("Build a landing page"));
+  }, [version]);
 
   const fileNames = Object.keys(files);
   const currentFile = selectedFile || fileNames[0] || "";
-  const content = currentFile ? files[currentFile] : "";
 
   return (
     <div style={panelStyle}>
-      <h1 style={{ marginTop: 0, marginBottom: 10 }}>Code</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <h1 style={{ margin: 0 }}>Code Explorer</h1>
+        <button onClick={() => setVersion((x) => x + 1)} style={refreshBtnStyle}>Refresh from Preview</button>
+      </div>
       <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 12, minHeight: 500 }}>
         <div style={listStyle}>
           {fileNames.map((name) => (
@@ -39,7 +51,7 @@ export default function CodePage() {
 
         <div style={viewerStyle}>
           <div style={{ marginBottom: 8, color: "rgba(255,255,255,0.75)", fontSize: 13 }}>{currentFile || "No file selected"}</div>
-          <pre style={preStyle}>{content}</pre>
+          <pre style={preStyle}>{files[currentFile]}</pre>
         </div>
       </div>
     </div>
@@ -51,6 +63,14 @@ const panelStyle = {
   border: "1px solid rgba(255,255,255,0.08)",
   borderRadius: 12,
   padding: 14,
+};
+
+const refreshBtnStyle = {
+  padding: "8px 10px",
+  borderRadius: 8,
+  border: "1px solid rgba(255,255,255,0.2)",
+  background: "rgba(255,255,255,0.08)",
+  color: "#fff",
 };
 
 const listStyle = {
